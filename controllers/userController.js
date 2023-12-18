@@ -1,4 +1,5 @@
 const User = require('../models/userModel');
+const { generateTokens } = require('../utils/tokenUtils');
 
 // @desc    Register new user
 // @route   POST /api/users
@@ -10,6 +11,18 @@ const register = async (req, res, next) => {
     const user = await User.register(res, name, email, password);
 
     if (user) {
+      const { at, rt } = generateTokens(user._id);
+
+      res.cookie('at', at, {
+        httpOnly: true,
+        maxAge: 5 * 60 * 1000,
+      });
+
+      res.cookie('rt', rt, {
+        httpOnly: true,
+        maxAge: 8 * 60 * 60 * 1000,
+      });
+
       res.status(200).json({
         _id: user._id,
       });
@@ -32,6 +45,18 @@ const login = async (req, res, next) => {
     const user = await User.login(res, email, password);
 
     if (user) {
+      const { at, rt } = generateTokens(user._id);
+
+      res.cookie('at', at, {
+        httpOnly: true,
+        maxAge: 60 * 1000,
+      });
+
+      res.cookie('rt', rt, {
+        httpOnly: true,
+        maxAge: 8 * 60 * 60 * 1000,
+      });
+
       res.status(200).json({
         _id: user._id,
       });
