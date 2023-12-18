@@ -27,13 +27,31 @@ userSchema.statics.register = async function (res, name, email, password) {
   // User already exists
   if (userExists) {
     res.status(400);
-    throw new Error('User already exists');
+    throw new Error('User already exists.');
   }
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
   const user = await this.create({ name, email, password: hashedPassword });
+
+  return user;
+};
+
+userSchema.statics.login = async function (res, email, password) {
+  const user = await this.findOne({ email });
+
+  if (!user) {
+    res.status(401);
+    throw new Error('Incorrect email address.');
+  }
+
+  const match = await bcrypt.compare(password, user.password);
+
+  if (!match) {
+    res.status(401);
+    throw new Error('Incorrect password.');
+  }
 
   return user;
 };
