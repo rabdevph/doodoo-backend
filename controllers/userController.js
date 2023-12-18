@@ -2,7 +2,7 @@ const User = require('../models/userModel');
 const { generateTokens } = require('../utils/tokenUtils');
 
 // @desc    Register new user
-// @route   POST /api/users
+// @route   POST /api/users/register
 // @access  Public
 const register = async (req, res, next) => {
   try {
@@ -13,15 +13,17 @@ const register = async (req, res, next) => {
     if (user) {
       const { at, rt } = generateTokens(user._id);
 
-      res.cookie('at', at, {
-        httpOnly: true,
-        maxAge: 5 * 60 * 1000,
-      });
-
-      res.cookie('rt', rt, {
-        httpOnly: true,
-        maxAge: 8 * 60 * 60 * 1000,
-      });
+      res
+        .cookie('at', at, {
+          httpOnly: true,
+          maxAge: 5 * 60 * 1000,
+          secure: true,
+        })
+        .cookie('rt', rt, {
+          httpOnly: true,
+          maxAge: 8 * 60 * 60 * 1000,
+          secure: true,
+        });
 
       res.status(200).json({
         _id: user._id,
@@ -36,7 +38,7 @@ const register = async (req, res, next) => {
 };
 
 // @desc    Login user
-// @route   POST /api/users
+// @route   POST /api/users/login
 // @access  Public
 const login = async (req, res, next) => {
   try {
@@ -47,15 +49,17 @@ const login = async (req, res, next) => {
     if (user) {
       const { at, rt } = generateTokens(user._id);
 
-      res.cookie('at', at, {
-        httpOnly: true,
-        maxAge: 60 * 1000,
-      });
-
-      res.cookie('rt', rt, {
-        httpOnly: true,
-        maxAge: 8 * 60 * 60 * 1000,
-      });
+      res
+        .cookie('at', at, {
+          httpOnly: true,
+          maxAge: 60 * 1000,
+          secure: true,
+        })
+        .cookie('rt', rt, {
+          httpOnly: true,
+          maxAge: 8 * 60 * 60 * 1000,
+          secure: true,
+        });
 
       res.status(200).json({
         _id: user._id,
@@ -69,4 +73,22 @@ const login = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login };
+// @desc    Logout user
+// @route   GET /api/users/logout
+// @access  Public
+const logout = (req, res) => {
+  res
+    .cookie('at', '', {
+      httpOnly: true,
+      expiresIn: new Date(0),
+      secure: true,
+    })
+    .cookie('rt', '', {
+      httpOnly: true,
+      expiresIn: new Date(0),
+      secure: true,
+    })
+    .send();
+};
+
+module.exports = { register, login, logout };
