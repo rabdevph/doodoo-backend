@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const { generateTokens } = require('../utils/tokenUtils');
 
@@ -91,4 +92,19 @@ const logout = (req, res) => {
     .send();
 };
 
-module.exports = { register, login, logout };
+// @desc    Check access token
+// @route   GET /api/users/hasAccessToken
+// @access  Public
+const hasAccessToken = (req, res) => {
+  try {
+    const accessToken = req.cookies.at;
+
+    jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+
+    res.send(true);
+  } catch (err) {
+    res.send(false);
+  }
+};
+
+module.exports = { register, login, logout, hasAccessToken };
