@@ -50,17 +50,17 @@ const login = async (req, res, next) => {
     if (user) {
       const { at, rt } = generateTokens(user._id);
 
-      res
-        .cookie('at', at, {
-          httpOnly: true,
-          maxAge: 60 * 1000,
-          secure: true,
-        })
-        .cookie('rt', rt, {
-          httpOnly: true,
-          maxAge: 8 * 60 * 60 * 1000,
-          secure: true,
-        });
+      res.cookie('at', at, {
+        httpOnly: true,
+        maxAge: 60 * 1000,
+        secure: true,
+      });
+
+      res.cookie('rt', rt, {
+        httpOnly: true,
+        maxAge: 8 * 60 * 60 * 1000,
+        secure: true,
+      });
 
       res.status(200).json({
         _id: user._id,
@@ -99,11 +99,13 @@ const hasAccessToken = (req, res) => {
   try {
     const accessToken = req.cookies.at;
 
-    jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+    const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
 
-    res.send(true);
+    if (decoded) {
+      res.json({ _id: decoded._id, hasAccessToken: true });
+    }
   } catch (err) {
-    res.send(false);
+    res.json({ _id: null, hasAccessToken: false });
   }
 };
 
