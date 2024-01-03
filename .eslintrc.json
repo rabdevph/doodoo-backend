@@ -15,7 +15,7 @@
     "no-console": "off",
     "no-undef": "off",
     "no-unused-vars": "warn",
-    "no-underscore-dangle": "warn",
+    "no-underscore-dangle": "off",
     "func-names": "off",
     "object-shorthand": "off"
   }
