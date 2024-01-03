@@ -12,7 +12,7 @@ const register = async (req, res, next) => {
     const user = await User.register(res, name, email, password);
 
     if (user) {
-      const { at, rt } = generateTokens(user._id);
+      const { at, st } = generateTokens(user._id);
 
       res
         .cookie('at', at, {
@@ -20,7 +20,7 @@ const register = async (req, res, next) => {
           maxAge: 5 * 60 * 1000,
           secure: true,
         })
-        .cookie('rt', rt, {
+        .cookie('st', st, {
           httpOnly: true,
           maxAge: 8 * 60 * 60 * 1000,
           secure: true,
@@ -48,7 +48,7 @@ const login = async (req, res, next) => {
     const user = await User.login(res, email, password);
 
     if (user) {
-      const { at, rt } = generateTokens(user._id);
+      const { at, st } = generateTokens(user._id);
 
       res.cookie('at', at, {
         httpOnly: true,
@@ -56,7 +56,7 @@ const login = async (req, res, next) => {
         secure: true,
       });
 
-      res.cookie('rt', rt, {
+      res.cookie('st', st, {
         httpOnly: true,
         maxAge: 8 * 60 * 60 * 1000,
         secure: true,
@@ -84,7 +84,7 @@ const logout = (req, res) => {
       expiresIn: new Date(0),
       secure: true,
     })
-    .cookie('rt', '', {
+    .cookie('st', '', {
       httpOnly: true,
       expiresIn: new Date(0),
       secure: true,
@@ -93,7 +93,7 @@ const logout = (req, res) => {
 };
 
 // @desc    Check access token
-// @route   GET /api/users/hasAccessToken
+// @route   GET /api/users/access-token
 // @access  Public
 const hasAccessToken = (req, res) => {
   try {
@@ -109,4 +109,21 @@ const hasAccessToken = (req, res) => {
   }
 };
 
-module.exports = { register, login, logout, hasAccessToken };
+// @desc    Check refresh token
+// @route   GET /api/users/session-token
+// @access  Public
+const hasSessionToken = (req, res) => {
+  try {
+    const sessionToken = req.cookies.st;
+
+    const decoded = jwt.verify(sessionToken, process.env.SESSION_TOKEN_SECRET);
+
+    if (decoded) {
+      res.json({ _id: decoded._id, hasSessionToken: true });
+    }
+  } catch (err) {
+    res.json({ _id: null, hasSessionToken: false });
+  }
+};
+
+module.exports = { register, login, logout, hasAccessToken, hasSessionToken };
