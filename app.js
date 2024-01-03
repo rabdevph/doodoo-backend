@@ -6,6 +6,7 @@ const colors = require('colors');
 
 const connectToDb = require('./utils/dbUtils');
 const userRoutes = require('./routes/userRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 const { logErrors, errorHandler } = require('./middleware/errorMiddleware');
 
 dotenv.config();
@@ -16,15 +17,16 @@ const port = process.env.PORT || 8000;
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow listed origins
-      const allowedOrigins = ['http://localhost:3000'];
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed connection'));
-      }
-    },
+    origin: '*',
+    // (origin, callback) => {
+    //   // Allow listed origins
+    //   const allowedOrigins = ['http://localhost:3000'];
+    //   if (allowedOrigins.includes(origin)) {
+    //     callback(null, true);
+    //   } else {
+    //     callback(new Error('Not allowed connection'));
+    //   }
+    // },
     credentials: true,
   }),
 );
@@ -39,6 +41,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/users', userRoutes);
+app.use('/api/tasks', taskRoutes);
 
 app.use(logErrors);
 app.use(errorHandler);
