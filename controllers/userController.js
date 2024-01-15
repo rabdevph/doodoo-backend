@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
-const { generateTokens } = require('../utils/tokenUtils');
+const generateTokens = require('../utils/tokenUtils');
 
 // @desc    Register new user
 // @route   POST /api/users/register
@@ -12,7 +12,7 @@ const register = async (req, res, next) => {
     const user = await User.register(res, name, email, password);
 
     if (user) {
-      const { at, st } = generateTokens(user._id);
+      const { at, st } = generateTokens({ _id: user._id, email: user.email });
 
       res
         .cookie('at', at, {
@@ -28,6 +28,7 @@ const register = async (req, res, next) => {
 
       res.status(200).json({
         _id: user._id,
+        email: user.email,
       });
     } else {
       res.status(400);
@@ -48,7 +49,7 @@ const login = async (req, res, next) => {
     const user = await User.login(res, email, password);
 
     if (user) {
-      const { at, st } = generateTokens(user._id);
+      const { at, st } = generateTokens({ _id: user._id, email: user.email });
 
       res.cookie('at', at, {
         httpOnly: true,
@@ -64,6 +65,7 @@ const login = async (req, res, next) => {
 
       res.status(200).json({
         _id: user._id,
+        email: user.email,
       });
     } else {
       res.status(400);
@@ -102,10 +104,12 @@ const hasAccessToken = (req, res) => {
     const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
 
     if (decoded) {
-      res.json({ _id: decoded._id, hasAccessToken: true });
+      // res.json({ _id: decoded._id, hasAccessToken: true });
+      res.json({ hasAccessToken: true });
     }
   } catch (err) {
-    res.json({ _id: null, hasAccessToken: false });
+    // res.json({ _id: null, hasAccessToken: false });
+    res.json({ hasAccessToken: false });
   }
 };
 
@@ -119,7 +123,11 @@ const hasSessionToken = (req, res) => {
     const decoded = jwt.verify(sessionToken, process.env.SESSION_TOKEN_SECRET);
 
     if (decoded) {
-      res.json({ _id: decoded._id, hasSessionToken: true });
+      res.json({
+        _id: decoded.userDetails._id,
+        email: decoded.userDetails.email,
+        hasSessionToken: true,
+      });
     }
   } catch (err) {
     res.json({ _id: null, hasSessionToken: false });
