@@ -8,7 +8,13 @@ const logErrors = (err, req, res, next) => {
 const errorHandler = (err, req, res, next) => {
   const statusCode = res.statusCode ? res.statusCode : 500;
 
-  res.status(statusCode).json({ message: err.message });
+  res.status(statusCode);
+
+  if (err.errorFields) {
+    res.json({ message: err.message, errorFields: err.errorFields });
+  } else {
+    res.json({ message: err.message });
+  }
 };
 
 module.exports = { logErrors, errorHandler };
