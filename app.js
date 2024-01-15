@@ -17,16 +17,15 @@ const port = process.env.PORT || 8000;
 
 app.use(
   cors({
-    origin: '*',
-    // (origin, callback) => {
-    //   // Allow listed origins
-    //   const allowedOrigins = ['http://localhost:3000'];
-    //   if (allowedOrigins.includes(origin)) {
-    //     callback(null, true);
-    //   } else {
-    //     callback(new Error('Not allowed connection'));
-    //   }
-    // },
+    origin: (origin, callback) => {
+      const allowedOrigins = ['http://localhost:3000'];
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed connection'));
+      }
+    },
     credentials: true,
   }),
 );
