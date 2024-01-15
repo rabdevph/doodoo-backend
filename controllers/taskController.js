@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const Task = require('../models/taskModel');
 
 // @desc    Get all tasks
@@ -16,14 +15,19 @@ const getAll = async (req, res, next) => {
 // @desc    Create task
 // @route   POST /api/tasks
 // @access  Private
-const create = async (req, res, next) => {
+const createTask = async (req, res, next) => {
+  const errorFields = [];
+
   try {
     const { description, priorityLevel, progress } = req.body;
     const { _id } = req.user;
 
     if (!description) {
+      errorFields.push('description');
       res.status(400);
-      throw new Error('Please fill the description.');
+      const error = new Error('Please fill task description.');
+      error.errorFields = errorFields;
+      throw error;
     }
 
     const newTask = await Task.create({
@@ -39,4 +43,34 @@ const create = async (req, res, next) => {
   }
 };
 
-module.exports = { getAll, create };
+// @desc    Update task
+// @route   PATCH /api/tasks/:id
+// @access  Private
+const updateTask = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const task = await Task.findOneAndUpdate({ _id: id }, { ...req.body }, { new: true });
+
+    res.status(200).json(task);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Delete task
+// @route   DELETE /api/tasks/:id
+// @access  Private
+const deleteTask = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const task = await Task.findOneAndDelete({ _id: id });
+
+    res.status(200).json(task);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getAll, createTask, deleteTask, updateTask };
