@@ -1,14 +1,13 @@
 const jwt = require('jsonwebtoken');
 const generateTokens = require('../utils/tokenUtils');
 
-const auth = async (req, res, next) => {
+const auth = (req, res, next) => {
   try {
     const sessionToken = req.cookies.st;
 
     if (!sessionToken) {
-      console.log('error in session token');
       res.status(400);
-      throw new Error('No session token.');
+      throw new Error('Session expired.');
     }
 
     const decodedSessionToken = jwt.verify(sessionToken, process.env.SESSION_TOKEN_SECRET);
@@ -16,9 +15,12 @@ const auth = async (req, res, next) => {
     const accessToken = req.cookies.at;
 
     if (!accessToken) {
-      const { at, st } = generateTokens(decodedSessionToken._id);
+      const { at, st } = generateTokens({
+        _id: decodedSessionToken.userDetails._id,
+        email: decodedSessionToken.userDetails.email,
+      });
 
-      const decodedNewAccessToken = await jwt.verify(at, process.env.ACCESS_TOKEN_SECRET);
+      const decodedNewAccessToken = jwt.verify(at, process.env.ACCESS_TOKEN_SECRET);
 
       res
         .cookie('at', at, {
@@ -33,12 +35,15 @@ const auth = async (req, res, next) => {
         });
 
       req.user = {
-        _id: decodedNewAccessToken._id,
+        _id: decodedNewAccessToken.userDetails._id,
+        email: decodedNewAccessToken.userDetails.email,
       };
     } else {
       const decodedAccessToken = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+
       req.user = {
-        _id: decodedAccessToken._id,
+        _id: decodedAccessToken.userDetails._id,
+        email: decodedAccessToken.userDetails.email,
       };
     }
 
