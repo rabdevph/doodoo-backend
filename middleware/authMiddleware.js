@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const generateTokens = require('../utils/tokenUtils');
+const { generateTokens } = require('../utils/tokenUtils');
 
 const auth = (req, res, next) => {
   try {
@@ -16,7 +16,7 @@ const auth = (req, res, next) => {
 
     if (!accessToken) {
       const { at, st } = generateTokens({
-        _id: decodedSessionToken.userDetails._id,
+        userId: decodedSessionToken.userDetails.userId,
         email: decodedSessionToken.userDetails.email,
       });
 
@@ -35,14 +35,14 @@ const auth = (req, res, next) => {
         });
 
       req.user = {
-        _id: decodedNewAccessToken.userDetails._id,
+        userId: decodedNewAccessToken.userDetails.userId,
         email: decodedNewAccessToken.userDetails.email,
       };
     } else {
       const decodedAccessToken = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
 
       req.user = {
-        _id: decodedAccessToken.userDetails._id,
+        userId: decodedAccessToken.userDetails.userId,
         email: decodedAccessToken.userDetails.email,
       };
     }
