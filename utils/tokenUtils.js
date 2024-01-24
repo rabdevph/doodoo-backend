@@ -9,4 +9,12 @@ const generateTokens = (userDetails) => {
   return { at, st };
 };
 
-module.exports = generateTokens;
+const generateVerificationToken = (email) => {
+  const token = jwt.sign({ email }, process.env.VERIFY_TOKEN_SECRET, {
+    expiresIn: 12 * 60 * 60,
+  });
+
+  return token;
+};
+
+module.exports = { generateTokens, generateVerificationToken };
