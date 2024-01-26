@@ -4,8 +4,8 @@ const {
   register,
   login,
   logout,
-  hasAccessToken,
-  hasSessionToken,
+  getSession,
+  getDetails,
 } = require('../controllers/userController');
 
 const router = express.Router();
@@ -13,7 +13,7 @@ const router = express.Router();
 router.post('/register', register);
 router.post('/login', login);
 router.get('/logout', logout);
-router.get('/access-token', hasAccessToken);
-router.get('/session-token', hasSessionToken);
+router.get('/get-session', getSession);
+router.post('/get-details', getDetails);
 
 module.exports = router;
