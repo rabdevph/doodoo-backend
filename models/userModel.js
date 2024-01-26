@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
+const { sendVerificationEmail } = require('../utils/emailVerificationUtils');
+const { generateVerificationToken } = require('../utils/tokenUtils');
 
 const userSchema = mongoose.Schema(
   {
@@ -16,6 +18,10 @@ const userSchema = mongoose.Schema(
     password: {
       type: String,
       required: true,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
     },
   },
   { timeStamps: true },
@@ -86,6 +92,17 @@ userSchema.statics.register = async function (res, name, email, password) {
     throw error;
   }
 
+  // Send email verification
+  const verificationToken = generateVerificationToken(email);
+
+  const emailSent = await sendVerificationEmail(email, verificationToken);
+
+  if (!emailSent) {
+    res.status(500);
+    const error = new Error('Error sending verification email.');
+    throw error;
+  }
+
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -123,6 +140,16 @@ userSchema.statics.login = async function (res, email, password) {
     errorFields.push('email');
     res.status(401);
     const error = new Error('Incorrect email address.');
+    error.errorFields = errorFields;
+    throw error;
+  }
+
+  if (!user.isVerified) {
+    errorFields.push('email');
+    res.status(401);
+    const error = new Error(
+      'Email address not verified, please check your email for verification.',
+    );
     error.errorFields = errorFields;
     throw error;
   }
