@@ -7,6 +7,7 @@ const colors = require('colors');
 const connectToDb = require('./utils/dbUtils');
 const userRoutes = require('./routes/userRoutes');
 const taskRoutes = require('./routes/taskRoutes');
+const verifyRoutes = require('./routes/verifyRoutes');
 const { logErrors, errorHandler } = require('./middleware/errorMiddleware');
 
 dotenv.config();
@@ -41,6 +42,7 @@ app.use((req, res, next) => {
 
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/verify', verifyRoutes);
 
 app.use(logErrors);
 app.use(errorHandler);
