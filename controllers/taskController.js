@@ -5,52 +5,38 @@ const Task = require('../models/taskModel');
 // @access  Private
 const getAll = async (req, res, next) => {
   try {
-    const task = await Task.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    const task = await Task.getAll(res, req.user.userId);
+
     res.status(200).json(task);
   } catch (err) {
     next(err);
   }
 };
 
-// @desc    Create task
+// @desc    Create new task
 // @route   POST /api/tasks
 // @access  Private
-const createTask = async (req, res, next) => {
-  const errorFields = [];
-
+const createNew = async (req, res, next) => {
   try {
-    const { description, priorityLevel, progress } = req.body;
-    const { _id } = req.user;
+    const task = await Task.createNew(
+      res,
+      req.user.userId,
+      req.body.description,
+      req.body.priorityLevel,
+    );
 
-    if (!description) {
-      errorFields.push('description');
-      res.status(400);
-      const error = new Error('Please fill task description.');
-      error.errorFields = errorFields;
-      throw error;
-    }
-
-    const newTask = await Task.create({
-      userId: _id,
-      description,
-      priorityLevel,
-      progress,
-    });
-
-    res.status(200).json(newTask);
+    res.status(200).json(task);
   } catch (err) {
     next(err);
   }
 };
 
-// @desc    Update task
+// @desc    Update task status
 // @route   PATCH /api/tasks/:id
 // @access  Private
 const updateTask = async (req, res, next) => {
   try {
-    const { id } = req.params;
-
-    const task = await Task.findOneAndUpdate({ _id: id }, { ...req.body }, { new: true });
+    const task = await Task.updateTask(res, req.params.taskId, req.body);
 
     res.status(200).json(task);
   } catch (err) {
@@ -63,9 +49,7 @@ const updateTask = async (req, res, next) => {
 // @access  Private
 const deleteTask = async (req, res, next) => {
   try {
-    const { id } = req.params;
-
-    const task = await Task.findOneAndDelete({ _id: id });
+    const task = await Task.deleteTask(res, req.params.taskId);
 
     res.status(200).json(task);
   } catch (err) {
@@ -73,4 +57,4 @@ const deleteTask = async (req, res, next) => {
   }
 };
 
-module.exports = { getAll, createTask, deleteTask, updateTask };
+module.exports = { getAll, createNew, deleteTask, updateTask };
