@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
-const generateTokens = require('../utils/tokenUtils');
+const { sendVerificationEmail } = require('../utils/emailVerificationUtils');
+const { generateTokens, generateVerificationToken } = require('../utils/tokenUtils');
 
 // @desc    Register new user
 // @route   POST /api/users/register
@@ -9,31 +10,11 @@ const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    const user = await User.register(res, name, email, password);
+    await User.register(res, name, email, password);
 
-    if (user) {
-      const { at, st } = generateTokens({ _id: user._id, email: user.email });
-
-      res
-        .cookie('at', at, {
-          httpOnly: true,
-          maxAge: 5 * 60 * 1000,
-          secure: true,
-        })
-        .cookie('st', st, {
-          httpOnly: true,
-          maxAge: 8 * 60 * 60 * 1000,
-          secure: true,
-        });
-
-      res.status(200).json({
-        _id: user._id,
-        email: user.email,
-      });
-    } else {
-      res.status(400);
-      throw new Error('Invalid user data.');
-    }
+    res.status(201).json({
+      message: 'User registered succesfully. Please check your email for verification.',
+    });
   } catch (err) {
     next(err);
   }
@@ -44,33 +25,25 @@ const register = async (req, res, next) => {
 // @access  Public
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const user = await User.login(res, req.body.email, req.body.password);
+    const { at, st } = generateTokens({ userId: user._id, email: user.email });
 
-    const user = await User.login(res, email, password);
+    res.cookie('at', at, {
+      httpOnly: true,
+      maxAge: 60 * 1000,
+      secure: true,
+    });
 
-    if (user) {
-      const { at, st } = generateTokens({ _id: user._id, email: user.email });
+    res.cookie('st', st, {
+      httpOnly: true,
+      maxAge: 8 * 60 * 60 * 1000,
+      secure: true,
+    });
 
-      res.cookie('at', at, {
-        httpOnly: true,
-        maxAge: 60 * 1000,
-        secure: true,
-      });
-
-      res.cookie('st', st, {
-        httpOnly: true,
-        maxAge: 8 * 60 * 60 * 1000,
-        secure: true,
-      });
-
-      res.status(200).json({
-        _id: user._id,
-        email: user.email,
-      });
-    } else {
-      res.status(400);
-      throw new Error('Invalid user data.');
-    }
+    res.status(200).json({
+      userId: user._id,
+      email: user.email,
+    });
   } catch (err) {
     next(err);
   }
@@ -94,44 +67,71 @@ const logout = (req, res) => {
     .send();
 };
 
-// @desc    Check access token
-// @route   GET /api/users/access-token
-// @access  Public
-const hasAccessToken = (req, res) => {
-  try {
-    const accessToken = req.cookies.at;
-
-    const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
-
-    if (decoded) {
-      // res.json({ _id: decoded._id, hasAccessToken: true });
-      res.json({ hasAccessToken: true });
-    }
-  } catch (err) {
-    // res.json({ _id: null, hasAccessToken: false });
-    res.json({ hasAccessToken: false });
-  }
-};
-
-// @desc    Check refresh token
+// @desc    Check session token
 // @route   GET /api/users/session-token
 // @access  Public
-const hasSessionToken = (req, res) => {
+const getSession = async (req, res) => {
   try {
-    const sessionToken = req.cookies.st;
+    const session = jwt.verify(req.cookies.st, process.env.SESSION_TOKEN_SECRET);
 
-    const decoded = jwt.verify(sessionToken, process.env.SESSION_TOKEN_SECRET);
-
-    if (decoded) {
-      res.json({
-        _id: decoded.userDetails._id,
-        email: decoded.userDetails.email,
-        hasSessionToken: true,
-      });
-    }
+    res.json({
+      userId: session.userDetails.userId,
+      email: session.userDetails.email,
+      isSessionActive: true,
+    });
   } catch (err) {
-    res.json({ _id: null, hasSessionToken: false });
+    res.json({ isSessionActive: false });
   }
 };
 
-module.exports = { register, login, logout, hasAccessToken, hasSessionToken };
+// @desc    Get user details
+// @route   POST /api/users/get-details
+// @access  Public
+const getDetails = async (req, res, next) => {
+  try {
+    const { userToken } = req.body;
+
+    const decodedToken = jwt.verify(userToken, process.env.VERIFY_TOKEN_SECRET, {
+      ignoreExpiration: true,
+    });
+
+    const { email } = decodedToken;
+
+    const user = await User.findOne({ email });
+
+    if (user.isVerified) {
+      res.status(200);
+      res.json({
+        isVerified: user.isVerified,
+        message: 'Email address verified. You can login to your account.',
+      });
+      return;
+    }
+
+    jwt.verify(userToken, process.env.VERIFY_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        res.status(401).json({
+          email: decodedToken.email,
+          message: 'Verification token expired. Send new verification request to',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        email: decoded.email,
+        isVerified: user.isVerified,
+        message: 'Click the button below to verify ',
+      });
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  logout,
+  getSession,
+  getDetails,
+};
